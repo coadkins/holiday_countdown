@@ -17,13 +17,14 @@ for display in DISPLAYS:
     display.clear()
     display.draw()
 
+message = "Merry Christmas"
+scroll = range(0, len(message) - 12 + 1)
+
 while True:
-    a = 65
-    while (a < 80):
+    for i in scroll:
         for display_indx, display in enumerate(DISPLAYS):
             display.clear()
-            for i in range(0,4):
-                display.set_character(chr(a + i +(4*display_indx)), i)
+            for c in range(0,4):
+                display.set_character(message[i+c + (4*display_indx)], c)
                 display.draw()
-        a += 1
         time.sleep(1)
