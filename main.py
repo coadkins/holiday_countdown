@@ -91,7 +91,7 @@ while True:
                     mins_remaining,
                     secs_remaining,
                     EVENT_NAME,
-                )opl;k0-op
+                )
             )
             message = countdown_string
             scroll_length = range(0, len(message) - 12 + 1)
