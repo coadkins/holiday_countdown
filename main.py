@@ -25,7 +25,7 @@ try:
 # any errors, reset MCU
 except Exception as e:  # pylint: disable=broad-except
     reset_on_error(10, e)
-
+    
 aio_username = os.getenv("ADAFRUIT_AIO_USERNAME")
 aio_key = os.getenv("ADAFRUIT_AIO_KEY")
 location = os.getenv("ADAFRUIT_AIO_TIMEZONE")
@@ -58,19 +58,18 @@ DISPLAYS = [
     HT16K33Segment14(i2c, 0x72)
 ]
 
+n_displays = len(DISPLAYS)
+trailing_spaces = ' ' * (n_displays*4)
+
 for display in DISPLAYS:
     display.set_brightness(5)
     display.clear()
     display.draw()
 
-scroll_time = 0
-
-while True:
+while True:        
     if (clock + scroll_time) < time.monotonic():
             now = io.receive_time()
-            # print(now)
-            # print(event_time)
-            remaining = time.mktime(event_time) - time.mktime(now)
+            remaining = time.mktime(event_time) - time.mktime(now)            
             # calculate the seconds remaining
             secs_remaining = remaining % 60
             remaining //= 60
@@ -93,17 +92,18 @@ while True:
                     EVENT_NAME,
                 )
             )
-            message = countdown_string
-            scroll_length = range(0, len(message) - 12 + 1)
+            message = trailing_spaces + countdown_string + trailing_spaces
+            scroll_length = range(0, len(message) - (n_displays*4) + 1)
             # if it's the day of the event...
             if remaining < 0:
-                message = EVENT_MESSAGE
-                scroll_length = range(0, len(message) - 12 + 1)
+                message = trailing_spaces + EVENT_MESSAGE + trailing_spaces
+                scroll_length = range(0, len(message) - (n_displays*4) + 1)
             print(message)
+    # update the display
     for i in scroll_length:
         for display_indx, display in enumerate(DISPLAYS):
             display.clear()
             for c in range(0,4):
                 display.set_character(message[i+c +(4*display_indx)], c)
                 display.draw()
-        time.sleep(.2)
+        time.sleep(.15)
