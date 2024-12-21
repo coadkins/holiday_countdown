@@ -65,45 +65,60 @@ for display in DISPLAYS:
     display.set_brightness(5)
     display.clear()
     display.draw()
+        
+# 'scroll_speed': time to update each character (in secs)
+scroll_speed = .15
+# initial scroll 'length' (with no message)
+scroll_length = 0
+# 'clock_timer': how often to update time over HTTP (in sec)
+clock_timer = 300
+# clock_clock': time since last update over HTTP
+clock_clock = time.monotonic()
+# initial reference time
+clock = io.receive_time()
 
-while True:        
-    if (clock + scroll_time) < time.monotonic():
-            now = io.receive_time()
-            remaining = time.mktime(event_time) - time.mktime(now)            
-            # calculate the seconds remaining
-            secs_remaining = remaining % 60
-            remaining //= 60
-            # calculate the minutes remaining
-            mins_remaining = remaining % 60
-            remaining //= 60
-            # calculate the hours remaining
-            hours_remaining = remaining % 24
-            remaining //= 24
-            # calculate the days remaining
-            days_remaining = remaining
-            # pack the calculated times into a string to scroll
-            countdown_string = (
-                "* %d Days %d Hours %d Minutes %s Seconds until %s *"
-                % (
-                    days_remaining,
-                    hours_remaining,
-                    mins_remaining,
-                    secs_remaining,
-                    EVENT_NAME,
-                )
-            )
-            message = trailing_spaces + countdown_string + trailing_spaces
-            scroll_length = range(0, len(message) - (n_displays*4) + 1)
-            # if it's the day of the event...
-            if remaining < 0:
-                message = trailing_spaces + EVENT_MESSAGE + trailing_spaces
-                scroll_length = range(0, len(message) - (n_displays*4) + 1)
-            print(message)
+while True:
+    elapsed = time.monotonic() - clock_clock
+    # update time if more than 'clock_timer' secs has passed
+    if elapsed > clock_timer:
+        clock = io.receive_time()
+        print("pinging Adafruit IO")
+        clock_clock = time.monotonic()
+    remaining = time.mktime(event_time) - time.mktime(clock) + round(elapsed)            
+    # calculate the seconds remaining
+    secs_remaining = remaining % 60
+    remaining //= 60
+    # calculate the minutes remaining
+    mins_remaining = remaining % 60
+    remaining //= 60
+    # calculate the hours remaining
+    hours_remaining = remaining % 24
+    remaining //= 24
+    # calculate the days remaining
+    days_remaining = remaining
+    # pack the calculated times into a string to scroll
+    countdown_string = (
+        "* %d Days %d Hours %d Minutes %s Seconds until %s *"
+        % (
+            days_remaining,
+            hours_remaining,
+            mins_remaining,
+            secs_remaining,
+            EVENT_NAME,
+        )
+    )
+    message = trailing_spaces + countdown_string + trailing_spaces
+    scroll_length = len(message) - (n_displays*4) + 1
+    print(message)
+    # if it's the day of the event...
+    if remaining < 0:
+        message = trailing_spaces + EVENT_MESSAGE + trailing_spaces
+        scroll_length = 0, len(message) - (n_displays*4) + 1
     # update the display
-    for i in scroll_length:
+    for i in range(0, scroll_length):
         for display_indx, display in enumerate(DISPLAYS):
             display.clear()
             for c in range(0,4):
                 display.set_character(message[i+c +(4*display_indx)], c)
                 display.draw()
-        time.sleep(.15)
+        time.sleep(scroll_speed)
