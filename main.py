@@ -3,10 +3,11 @@ import os
 import time
 import ssl
 import wifi
-import socketpool
 import microcontroller
 import board
 import busio
+import supervisor
+import adafruit_connection_manager
 import adafruit_requests
 from adafruit_io.adafruit_io import IO_HTTP, AdafruitIO_RequestError
 from ht16k33 import HT16K33Segment14
@@ -30,7 +31,8 @@ aio_username = os.getenv("ADAFRUIT_AIO_USERNAME")
 aio_key = os.getenv("ADAFRUIT_AIO_KEY")
 location = os.getenv("ADAFRUIT_AIO_TIMEZONE")
 
-pool = socketpool.SocketPool(wifi.radio)
+pool = adafruit_connection_manager.get_radio_socketpool(wifi.radio)
+ssl_context = adafruit_connection_manager.get_radio_ssl_context(wifi.radio)
 requests = adafruit_requests.Session(pool, ssl.create_default_context())
 # Initialize an Adafruit IO HTTP API object
 try:
@@ -81,9 +83,15 @@ while True:
     elapsed = time.monotonic() - clock_clock
     # update time if more than 'clock_timer' secs has passed
     if elapsed > clock_timer:
-        clock = io.receive_time()
-        print("pinging Adafruit IO")
-        clock_clock = time.monotonic()
+        try:
+            clock = io.receive_time()
+            print("pinging Adafruit IO")
+            clock_clock = time.monotonic()
+        except Exception as e: #pylint: disable=broad-except
+            print("Some error occured, retrying via superisor.reload in 5 seconds -", e)
+            time.sleep(5)
+            wifi.radio.enabled = False
+            supervisor.reload()
     remaining = time.mktime(event_time) - time.mktime(clock) + round(elapsed)            
     # calculate the seconds remaining
     secs_remaining = remaining % 60
